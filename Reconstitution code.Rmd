@@ -5,31 +5,89 @@ date: "2024-06-12"
 output: html_document
 ---
 
-```{r packages, include=FALSE}
+```{r dependecies}
+#| include: true
+#| warning: false
+#| message: false
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(knitr)
 library(readxl) # For importing from excel spreadsheets
 
-
 ```
 
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r import and cleaning, include=FALSE}
+raw_data <- read_excel("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/AK8038429000.xlsx")
+raw_data <-raw_data%>%
+  rename(AK="Addresskey",
+         List="List Year",
+         Effective="Effective Date",
+         Alteration="List Alteration Date",
+         Assessment="Ass Ref",
+         Case="Case Number")
 
-```{r import and cleaning}
-data<-
 ```
 
 ## Including Plots
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r creating the tables, echo=FALSE}
+
+nodes <- raw_data$AK%>%
+  unique()
+
+child_data<- raw_data%>%
+  filter(raw_data$Relationship=="Child")
+
+parent_data<- raw_data%>%
+  filter(raw_data$Relationship=="Parent")
+
+parent_data<-parent_data%>%
+  mutate(Effective = if_else(is.na(Effective), as.Date("1995/04/01"), Effective))
+
+parent_data<-parent_data%>%
+  mutate(RV = if_else(is.na(RV), 0, RV))
+
+child_data<-child_data%>%
+  mutate(rv = if_else(is.na(RV), 0, RV))
+
+child_data<-child_data%>%
+  mutate(RV = if_else(is.na(Effective), as.Date("1995/04/01"), Effective))
+
+link_table <- data.frame(from=0, to=0)
+
+#n <-child_data%>%
+  #nrow()
+
+child_data <- child_data%>%
+  mutate(from = case_when(child_data$case==parent_data$Case~parent_data$AK))
+
+cases<-raw_data%>%
+  group_by(Case)%>%
+  group_by(Relationship)
+
+cases$from<-0
+
+cases$to<-0
+
+cases <- cases%>%
+  mutate(to=ifelse(Relationship=="Child",cases$AK, cases$to))
+
+cases <- cases%>%
+  mutate(from=ifelse(Relationship=="Parent",cases$AK, cases$from))
+  
+parent_data<-parent_data%>%
+  ungroup(Case)
+
+cases<-cases%>%
+  mutate(from=case_when(Relationship=="Child"& Case==parent_data$Case~parent_data$AK))
+
+cases<-cases%>%
+  mutate(from=case_when(if_else(Relationship=="Child" & Case==parent_data$Case,TRUE,FALSE)==TRUE~case_when(if_else(Case==parent_data$Case,TRUE,from)==TRUE)~parent_data$AK))
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
