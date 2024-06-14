@@ -95,11 +95,11 @@ cases<-cases%>%
 
 cases<-cases%>%
   group_by(Case)%>%
-  mutate(from=case_when(parent_data$Case=Case~parent_data$AK))
+  mutate(from=case_when(parent_data[value_parent]$Case==Case~parent_data$AK))
 
 value<-1
 
-function(value_parent){
+value_parent<-function(value_parent){
  for(value in 1:n){
    if(value<=nrow(parent_data)){
    print(value)
@@ -107,10 +107,14 @@ function(value_parent){
  }
  else
  {value<-1
-     break}
+     }
    
   }
 }
+
+cases<-cases%>%
+  filter
+
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
