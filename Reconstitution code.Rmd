@@ -21,6 +21,7 @@ library(readxl) # For importing from excel spreadsheets
 
 ```{r import and cleaning, include=FALSE}
 raw_data <- read_excel("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/AK8038429000.xlsx")
+raw_data<-read_excel("Data/AK8038429000.xlsx")
 raw_data <-raw_data%>%
   rename(AK="Addresskey",
          List="List Year",
@@ -88,6 +89,28 @@ cases<-cases%>%
 
 cases<-cases%>%
   mutate(from=case_when(if_else(Relationship=="Child" & Case==parent_data$Case,TRUE,FALSE)==TRUE~case_when(if_else(Case==parent_data$Case,TRUE,from)==TRUE)~parent_data$AK))
+
+cases<-cases%>%
+  mutate(creation=case_when(Relationship=="Child"& Case==parent_data$Case~case_when(parent_data$Case==child_data$Case~parent_data$AK)))
+
+cases<-cases%>%
+  group_by(Case)%>%
+  mutate(from=case_when(parent_data$Case=Case~parent_data$AK))
+
+value<-1
+
+function(value_parent){
+ for(value in 1:n){
+   if(value<=nrow(parent_data)){
+   print(value)
+ value<-value+1
+ }
+ else
+ {value<-1
+     break}
+   
+  }
+}
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
