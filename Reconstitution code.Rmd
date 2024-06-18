@@ -93,9 +93,14 @@ cases<-cases%>%
 cases<-cases%>%
   mutate(creation=case_when(Relationship=="Child"& Case==parent_data$Case~case_when(parent_data$Case==child_data$Case~parent_data$AK)))
 
+cases$Relationship[cases$Relationship=="Child"]<-1
+cases$Relationship[cases$Relationship=="Parent"]<-0
+
+cases <- as.numeric(cases$Relationship)
+
 cases<-cases%>%
   group_by(Case)%>%
-  mutate(from=case_when(parent_data[value_parent]$Case==Case~parent_data$AK))
+  mutate(if_else(count(cases$Relationship==1)>sum(cases$Relationship==0),))
 
 value<-1
 
