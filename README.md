@@ -1,1 +1,1 @@
-# The aim of this is to create an output of an interactive graph that can show the reconstitutions of many different lines at once and allow it to be visualised in a way that can be helpful and useful
+# The aim of this is to create an output of an interactive graph that can show the reconstitutions of many different lines at once and allow it to be visualised in a way that can show visually what has happened to a heredit
