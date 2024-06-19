@@ -95,8 +95,9 @@ cases<-cases%>%
 
 cases$Relationship[cases$Relationship=="Child"]<-1
 cases$Relationship[cases$Relationship=="Parent"]<-0
+cases$Relationship<-ifelse(is.na(cases$Relationship),2,cases$Relationship)
 
-cases <- as.numeric(cases$Relationship)
+cases$Relationship <- as.numeric(cases$Relationship)
 
 cases<-cases%>%
   group_by(Case)%>%
