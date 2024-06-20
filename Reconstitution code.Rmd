@@ -43,6 +43,7 @@ You can also embed plots, for example:
 nodes <- raw_data$AK%>%
   unique()%>%
   as.data.frame()
+
 colnames(nodes)<-"id"
 
 child_data<- raw_data%>%
@@ -113,17 +114,21 @@ final_cases<-as.data.frame(final_cases)
 
 final_cases<-final_cases_together%>%
   filter(Relationship!=2)%>%
-  mutate(from=ifelse(from==0,node,from),
-         to=ifelse(to==0,node,to))
+  mutate(from=ifelse(from==0&to!=0,node,from),
+         to=ifelse(to==0&from!=0,node,to))
 
 link_data<-data.frame(final_cases$from,final_cases$to)
 
 colnames(link_data)<-c("from","to")
 
 link_data<-link_data%>%
+  filter(from!=0)%>%
+  filter(to!=0)
+
+link_data<-link_data%>%
   distinct()
 
-network_graph<-visNetwork(nodes,link_data,width="100%",physics=false)%>%
+network_graph<-visNetwork(nodes,link_data,physics=FALSE)%>%
   visNodes()
 
 visSave(network_graph,"Interactive graph.html")
