@@ -25,6 +25,7 @@ library(lubridate)
 raw_data <- read_excel("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/AK8038429000.xlsx")
 raw_data<-read_excel("Data/AK8038429000.xlsx")
 raw_data<-read_excel("Data/AK10059370000.xlsx")
+raw_data<-read_excel("Data/Raven Suite - AK - 13091186000.xlsx")
 raw_data <-raw_data%>%
   rename(AK="Addresskey",
          List="List Year",
@@ -129,6 +130,36 @@ final_cases<-final_cases_together%>%
   filter(Relationship!=is.na(final_cases_together$Relationship))%>%
   mutate(to=ifelse(Relationship=="Parent" & Relationship.y=="Child"&from!=0&to==0,AK.y,to))
 
+address_change_data <- raw_data%>%
+  filter(`Change Reason`=="ADDRESS CHANGE & REVIEW OF ASSESSMENT")
+
+address_change_data<-address_change_data%>%
+  mutate(RV = if_else(is.na(RV), 0, RV))
+
+address_change_data<-address_change_data%>%
+  mutate(from=if_else(RV==0,AK,0),
+         to=if_else(RV!=0,AK,0))
+
+address_from_data<-address_change_data%>%
+  sort_by(address_change_data$Case)%>%
+  filter(from!=0)
+
+address_to_data<-address_change_data%>%
+  sort_by(address_change_data$Case)%>%
+  filter(to!=0)
+
+address_link_data<-data.frame(address_from_data$from,address_to_data$to)
+
+colnames(address_link_data)<-c("from","to")
+
+address_link_data<-address_link_data%>%
+  mutate(color="purple")
+
+```
+
+
+
+```{r creating the plots, echo=TRUE}
 
 link_data<-data.frame(final_cases$from,final_cases$to)
 
@@ -138,14 +169,25 @@ link_data<-link_data%>%
   filter(from!=0)%>%
   filter(to!=0)
 
-network_graph<-visNetwork(nodes,link_data,physics=FALSE,width="100%")%>%
+link_data<-link_data%>%
+  mutate(color="pink")
+
+link_data_all<-rbind(link_data,address_link_data)
+
+ledges<-data.frame(color=c("pink","purple"),
+                   label=c("Reconstitution","ADDRESS CHANGE & REVIEW OF ASSESSMENT"),
+                   width=5)
+
+network_graph<-visNetwork(nodes,link_data_all,physics=FALSE,width="100%")%>%
   visNodes()%>%
-  visEdges(arrows = "to")%>%
-  visGroups(groupname = "zero", color="blue")%>%
-  visGroups(groupname = "full sbr", color="green")%>%
+  visEdges(arrows = "middle",width = 5)%>%
+  visGroups(groupname = "zero", color="lightblue")%>%
+  visGroups(groupname = "full sbr", color="lightgreen")%>%
   visGroups(groupname = "partial sbr", color="orange")%>%
   visGroups(groupname = "inelligible", color="red")%>%
-  visOptions(nodesIdSelection = TRUE,highlightNearest = TRUE)
+  visOptions(nodesIdSelection = TRUE,highlightNearest = TRUE)%>%
+  visLegend(addEdges = ledges,
+            addNodes=list(font.color = "white"))
 
 visSave(network_graph,"Interactive graph.html")
 
