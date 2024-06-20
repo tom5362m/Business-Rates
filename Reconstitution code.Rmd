@@ -85,18 +85,12 @@ cases <- cases%>%
 cases <- cases%>%
   mutate(from=ifelse(Relationship=="Parent",cases$AK, cases$from))
 
-cases$Relationship[cases$Relationship=="Child"]<-1
-cases$Relationship[cases$Relationship=="Parent"]<-0
-cases$Relationship<-ifelse(is.na(cases$Relationship),2,cases$Relationship)
-
-cases$Relationship <- as.numeric(cases$Relationship)
-
 parent_values <- cases%>%
-  filter(Relationship==0)%>%
+  filter(Relationship=="Parent")%>%
   select(AK,Case,Relationship)
 
 child_values <- cases%>%
-  filter(Relationship==1)%>%
+  filter(Relationship=="Child")%>%
   select(AK,Case,Relationship)
 
 final_cases_parent<-left_join(cases,parent_values,by="AK")
@@ -113,9 +107,9 @@ names(final_cases_together)[names(final_cases_together) == 'Relationship.x'] <- 
 names(final_cases_together)[names(final_cases_together) == 'Case.y'] <- 'node'
 
 final_cases<-final_cases_together%>%
-  filter(Relationship!=2)%>%
-  mutate(to=ifelse(from==0&to!=0&Relationship==1,node,from),
-         from=ifelse(to==0&from!=0&Relationship==0,node,to))
+  filter(Relationship!=is.na(final_cases_together$Relationship))%>%
+  mutate(from=ifelse(from==0&to!=0&Relationship=="Child",node,from),
+         to=ifelse(to==0&from!=0&Relationship=="Parent",node,to))
 
 link_data<-data.frame(final_cases$from,final_cases$to)
 
