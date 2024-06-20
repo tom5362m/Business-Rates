@@ -108,8 +108,8 @@ names(final_cases_together)[names(final_cases_together) == 'Case.y'] <- 'node'
 
 final_cases<-final_cases_together%>%
   filter(Relationship!=is.na(final_cases_together$Relationship))%>%
-  mutate(from=ifelse(from==0&to!=0&Relationship=="Child",node,from),
-         to=ifelse(to==0&from!=0&Relationship=="Parent",node,to))
+  mutate(to=ifelse(from==0&to!=0&Relationship=="Child",node,from),
+         from=ifelse(to==0&from!=0&Relationship=="Parent",node,to))
 
 link_data<-data.frame(final_cases$from,final_cases$to)
 
