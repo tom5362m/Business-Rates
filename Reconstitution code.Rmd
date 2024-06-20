@@ -120,28 +120,13 @@ link_data<-data.frame(final_cases$from,final_cases$to)
 
 colnames(link_data)<-c("from","to")
 
-network_graph<-visNetwork(nodes,link_data,width="100%")%>%
+link_data<-link_data%>%
+  distinct()
+
+network_graph<-visNetwork(nodes,link_data,width="100%",physics=false)%>%
   visNodes()
 
 visSave(network_graph,"Interactive graph.html")
-
-value<-1
-
-value_parent<-function(value_parent){
- for(value in 1:n){
-   if(value<=nrow(parent_data)){
-   print(value)
- value<-value+1
- }
- else
- {value<-1
-     }
-   
-  }
-}
-
-cases<-cases%>%
-  filter
 
 ```
 
