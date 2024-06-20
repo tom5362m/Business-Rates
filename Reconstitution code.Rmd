@@ -14,7 +14,9 @@ library(tidyverse)
 library(knitr)
 library(readxl)# For importing from excel spreadsheets
 library(visNetwork)#netwroking interactive graph package
-
+library(ggraph)
+library(tidygraph)
+library(igraph)
 
 ```
 
@@ -122,8 +124,12 @@ link_data<-link_data%>%
 link_data<-link_data%>%
   distinct()
 
+graph_from_data_frame(v=nodes,d=link_data)%>%
+  as_tbl_graph
+
 network_graph<-visNetwork(nodes,link_data,physics=FALSE)%>%
-  visNodes()
+  visNodes()%>%
+  visEdges()
 
 visSave(network_graph,"Interactive graph.html")
 
