@@ -12,7 +12,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(knitr)
-library(readxl) # For importing from excel spreadsheets
+library(readxl)# For importing from excel spreadsheets
+library(visNetwork)#netwroking interactive graph package
+
 
 ```
 
@@ -39,7 +41,9 @@ You can also embed plots, for example:
 ```{r creating the tables, echo=FALSE}
 
 nodes <- raw_data$AK%>%
-  unique()
+  unique()%>%
+  as.data.frame()
+colnames(nodes)<-"id"
 
 child_data<- raw_data%>%
   filter(raw_data$Relationship=="Child")
@@ -59,17 +63,16 @@ child_data<-child_data%>%
 child_data<-child_data%>%
   mutate(RV = if_else(is.na(Effective), as.Date("1995/04/01"), Effective))
 
-link_table <- data.frame(from=0, to=0)
-
-#n <-child_data%>%
-  #nrow()
-
-child_data <- child_data%>%
-  mutate(from = case_when(child_data$case==parent_data$Case~parent_data$AK))
 
 cases<-raw_data%>%
   group_by(Case)%>%
   group_by(Relationship)
+
+cases<-cases%>%
+  mutate(RV = if_else(is.na(RV), 0, RV))
+
+cases<-cases%>%
+  mutate(Effective = if_else(is.na(Effective), as.Date("1995/04/01"), Effective))
 
 cases$from<-0
 
@@ -80,18 +83,6 @@ cases <- cases%>%
 
 cases <- cases%>%
   mutate(from=ifelse(Relationship=="Parent",cases$AK, cases$from))
-  
-parent_data<-parent_data%>%
-  ungroup(Case)
-
-cases<-cases%>%
-  mutate(from=case_when(Relationship=="Child"& Case==parent_data$Case~parent_data$AK))
-
-cases<-cases%>%
-  mutate(from=case_when(if_else(Relationship=="Child" & Case==parent_data$Case,TRUE,FALSE)==TRUE~case_when(if_else(Case==parent_data$Case,TRUE,from)==TRUE)~parent_data$AK))
-
-cases<-cases%>%
-  mutate(creation=case_when(Relationship=="Child"& Case==parent_data$Case~case_when(parent_data$Case==child_data$Case~parent_data$AK)))
 
 cases$Relationship[cases$Relationship=="Child"]<-1
 cases$Relationship[cases$Relationship=="Parent"]<-0
@@ -99,9 +90,38 @@ cases$Relationship<-ifelse(is.na(cases$Relationship),2,cases$Relationship)
 
 cases$Relationship <- as.numeric(cases$Relationship)
 
-cases<-cases%>%
-  group_by(Case)%>%
-  mutate(if_else(count(cases$Relationship==1)>sum(cases$Relationship==0),))
+parent_values <- cases%>%
+  filter(Relationship==0)%>%
+  select(AK,Case,Relationship)
+
+colnames(parent_values)<-c("node","Case","Relationship1")
+
+child_values <- cases%>%
+  filter(Relationship==1)%>%
+  select(AK,Case,Relationship)
+
+colnames(child_values)<-c("node","Case","Relationship1")
+
+final_cases_parent<-left_join(cases,parent_values,by="Case")
+final_cases_child<-left_join(cases,child_values,by="Case")
+
+final_cases_together<-rbind(final_cases_child,final_cases_parent)
+
+final_cases<-c("from","to")
+
+final_cases<-as.data.frame(final_cases)
+
+final_cases<-final_cases_together%>%
+  filter(Relationship!=2)%>%
+  mutate(from=ifelse(from==0,node,from),
+         to=ifelse(to==0,node,to))
+
+link_data<-data.frame(final_cases$from,final_cases$to)
+
+network_graph<-visNetwork(nodes,link_data,width="100%")%>%
+  visNodes()
+
+visSave(network_graph,"Interactive graph.html")
 
 value<-1
 
