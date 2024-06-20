@@ -14,9 +14,7 @@ library(tidyverse)
 library(knitr)
 library(readxl)# For importing from excel spreadsheets
 library(visNetwork)#netwroking interactive graph package
-library(ggraph)
-library(tidygraph)
-library(igraph)
+library()
 
 ```
 
@@ -40,7 +38,18 @@ raw_data <-raw_data%>%
 
 You can also embed plots, for example:
 
-```{r creating the tables, echo=FALSE}
+```{r creating the tables, echo=TRUE}
+
+new_nodes<-raw_data%>%
+  select(AK,Effective,RV)
+
+new_nodes<-new_nodes%>%
+  filter(Effective!=is.na(new_nodes$Effective))
+
+
+
+new_nodes<-new_nodes%>%
+  select()
 
 nodes <- raw_data$AK%>%
   unique()%>%
@@ -95,8 +104,8 @@ child_values <- cases%>%
   filter(Relationship=="Child")%>%
   select(AK,Case,Relationship)
 
-final_cases_parent<-left_join(cases,parent_values,by="AK")
-final_cases_child<-left_join(cases,child_values,by="AK")
+final_cases_parent<-left_join(cases,parent_values,by="Case")
+final_cases_child<-left_join(cases,child_values,by="Case")
 
 final_cases_together<-rbind(final_cases_child,final_cases_parent)
 
@@ -110,8 +119,9 @@ names(final_cases_together)[names(final_cases_together) == 'Case.y'] <- 'node'
 
 final_cases<-final_cases_together%>%
   filter(Relationship!=is.na(final_cases_together$Relationship))%>%
-  mutate(to=ifelse(from==0&to!=0&Relationship=="Child",node,from),
-         from=ifelse(to==0&from!=0&Relationship=="Parent",node,to))
+  mutate(to=ifelse(Relationship=="Parent" & Relationship.y=="Child"&from!=0&to==0,AK.y,to))
+
+
 
 link_data<-data.frame(final_cases$from,final_cases$to)
 
@@ -121,15 +131,10 @@ link_data<-link_data%>%
   filter(from!=0)%>%
   filter(to!=0)
 
-link_data<-link_data%>%
-  distinct()
 
-graph_from_data_frame(v=nodes,d=link_data)%>%
-  as_tbl_graph
-
-network_graph<-visNetwork(nodes,link_data,physics=FALSE)%>%
+network_graph<-visNetwork(nodes,link_data,physics=FALSE,width="100%")%>%
   visNodes()%>%
-  visEdges()
+  visEdges(arrows = "to")
 
 visSave(network_graph,"Interactive graph.html")
 
