@@ -14,7 +14,7 @@ library(tidyverse)
 library(knitr)
 library(readxl)# For importing from excel spreadsheets
 library(visNetwork)#netwroking interactive graph package
-library()
+library(lubridate)
 
 ```
 
@@ -24,6 +24,7 @@ library()
 ```{r import and cleaning, include=FALSE}
 raw_data <- read_excel("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/AK8038429000.xlsx")
 raw_data<-read_excel("Data/AK8038429000.xlsx")
+raw_data<-read_excel("Data/AK10059370000.xlsx")
 raw_data <-raw_data%>%
   rename(AK="Addresskey",
          List="List Year",
@@ -44,18 +45,25 @@ new_nodes<-raw_data%>%
   select(AK,Effective,RV)
 
 new_nodes<-new_nodes%>%
-  filter(Effective!=is.na(new_nodes$Effective))
-
-
+  mutate(Effective=if_else(is.na(Effective), as.Date("1995/04/01"), Effective),
+         RV=if_else(is.na(RV), 0, RV))
 
 new_nodes<-new_nodes%>%
-  select()
+  mutate(str_replace_all(Effective,"-","/"))
 
-nodes <- raw_data$AK%>%
-  unique()%>%
-  as.data.frame()
+colnames(new_nodes)<-c("AK","Effective","RV","effective_date")
 
-colnames(nodes)<-"id"
+new_nodes<-new_nodes%>%
+  group_by(AK)%>%
+  slice(which.max(as_date(effective_date)))
+
+nodes<-new_nodes%>%
+  ungroup()%>%
+  mutate(group=if_else(RV>0&RV<12000,"full sbr",
+                                 if_else(RV>=12000&RV<15000,"partial sbr",
+                                         if_else(RV==0,"zero","inelligible"))))
+
+names(nodes)[names(nodes)=="AK"]<-"id"
 
 child_data<- raw_data%>%
   filter(raw_data$Relationship=="Child")
@@ -122,7 +130,6 @@ final_cases<-final_cases_together%>%
   mutate(to=ifelse(Relationship=="Parent" & Relationship.y=="Child"&from!=0&to==0,AK.y,to))
 
 
-
 link_data<-data.frame(final_cases$from,final_cases$to)
 
 colnames(link_data)<-c("from","to")
@@ -131,10 +138,14 @@ link_data<-link_data%>%
   filter(from!=0)%>%
   filter(to!=0)
 
-
 network_graph<-visNetwork(nodes,link_data,physics=FALSE,width="100%")%>%
   visNodes()%>%
-  visEdges(arrows = "to")
+  visEdges(arrows = "to")%>%
+  visGroups(groupname = "zero", color="blue")%>%
+  visGroups(groupname = "full sbr", color="green")%>%
+  visGroups(groupname = "partial sbr", color="orange")%>%
+  visGroups(groupname = "inelligible", color="red")%>%
+  visOptions(nodesIdSelection = TRUE,highlightNearest = TRUE)
 
 visSave(network_graph,"Interactive graph.html")
 
