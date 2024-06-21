@@ -159,7 +159,7 @@ address_link_data<-data.frame(address_from_data$from,address_to_data$to)
 colnames(address_link_data)<-c("from","to")
 
 address_link_data<-address_link_data%>%
-  distinct
+  distinct()
 
 address_link_data<-address_link_data%>%
   mutate(color="purple")
@@ -180,6 +180,9 @@ link_data<-link_data%>%
 
 link_data<-link_data%>%
   mutate(color="pink")
+
+link_data<-link%>%
+  distinct()
 
 link_data_all<-rbind(link_data,address_link_data)
 
