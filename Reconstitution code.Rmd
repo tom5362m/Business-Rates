@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(knitr)
 library(readxl)# For importing from excel spreadsheets
-library(visNetwork)#netwroking interactive graph package
+library(visNetwork)#networking interactive graph package
 library(lubridate)
 
 ```
@@ -26,12 +26,12 @@ raw_data <- read_excel("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-
 raw_data<-read_excel("Data/AK8038429000.xlsx")
 raw_data<-read_excel("Data/AK10059370000.xlsx")
 raw_data<-read_excel("Data/Raven Suite - AK - 13091186000.xlsx")
-raw
+raw_data<-read_excel("Data/AK6447419000.xlsx")
 
-raw_data_1<-read_excel("Data/Part 1 AK11002881000.xlsx")
-raw_data_2<-read_excel("Data/Part 2 AK11002881000.xlsx")
+raw_data_1<-read_excel("Data/Part 1 AK11002881000.xlsx")#if you have 2 datasets one goes here
+raw_data_2<-read_excel("Data/Part 2 AK11002881000.xlsx")#if you have 2 datasets one goes here
 
-raw_data<-rbind(raw_data_1,raw_data_2)
+raw_data<-rbind(raw_data_1,raw_data_2)#if you have 2 datasets use this to bind them together
 
 raw_data <-raw_data%>%
   rename(AK="Addresskey",
@@ -39,7 +39,7 @@ raw_data <-raw_data%>%
          Effective="Effective Date",
          Alteration="List Alteration Date",
          Assessment="Ass Ref",
-         Case="Case Number")
+         Case="Case Number")#cleaning the column names
 
 ```
 
@@ -49,121 +49,92 @@ You can also embed plots, for example:
 
 ```{r creating the tables, echo=TRUE}
 
-new_nodes<-raw_data%>%
-  select(AK,Effective,RV)
-
-new_nodes<-new_nodes%>%
+raw_data<-raw_data%>%
   mutate(Effective=if_else(is.na(Effective), as.Date("1995/04/01"), Effective),
-         RV=if_else(is.na(RV), 0, RV))
+         RV=if_else(is.na(RV), 0, RV))#cleaning the data on RV and dates here so it is easier to do
 
-new_nodes<-new_nodes%>%
-  mutate(str_replace_all(Effective,"-","/"))
+raw_data<-raw_data%>%
+  mutate(str_replace_all(Effective,"-","/"))#formatting the dates to be better
 
-colnames(new_nodes)<-c("AK","Effective","RV","effective_date")
+colnames(raw_data)<-c("Assessments","Address","RV","Effective","Alteration","Change Reason","Notes","List","AK","Case","Assessment","Relationship","effective_date")
+
+new_nodes<-raw_data%>%
+  select(AK,effective_date,RV)#creating the nodes list
 
 new_nodes<-new_nodes%>%
   group_by(AK)%>%
-  slice(which.max(as_date(effective_date)))
+  slice(which.max(as_date(effective_date)))#selecting the RV based on the most recent entry for each AK
 
 nodes<-new_nodes%>%
   ungroup()%>%
   mutate(group=if_else(RV>0&RV<12000,"full sbr",
                                  if_else(RV>=12000&RV<15000,"partial sbr",
-                                         if_else(RV==0,"zero","inelligible"))))
+                                         if_else(RV==0,"zero","inelligible"))))#labelling each AK with whether it is elligible for SBRR for the colouring of the nodes
 
-names(nodes)[names(nodes)=="AK"]<-"id"
-
-child_data<- raw_data%>%
-  filter(raw_data$Relationship=="Child")
-
-parent_data<- raw_data%>%
-  filter(raw_data$Relationship=="Parent")
-
-parent_data<-parent_data%>%
-  mutate(Effective = if_else(is.na(Effective), as.Date("1995/04/01"), Effective))
-
-parent_data<-parent_data%>%
-  mutate(RV = if_else(is.na(RV), 0, RV))
-
-child_data<-child_data%>%
-  mutate(rv = if_else(is.na(RV), 0, RV))
-
-child_data<-child_data%>%
-  mutate(RV = if_else(is.na(Effective), as.Date("1995/04/01"), Effective))
-
+names(nodes)[names(nodes)=="AK"]<-"id"#renaming the column for the network to read AK as the id
 
 cases<-raw_data%>%
   group_by(Case)%>%
-  group_by(Relationship)
+  group_by(Relationship)#creating a new data set that is grouped for checking purposes
 
-cases<-cases%>%
-  mutate(RV = if_else(is.na(RV), 0, RV))
+cases$from<-0#creating the from column for the edge data
 
-cases<-cases%>%
-  mutate(Effective = if_else(is.na(Effective), as.Date("1995/04/01"), Effective))
-
-cases$from<-0
-
-cases$to<-0
+cases$to<-0#creating the to column for the edge data
 
 cases <- cases%>%
-  mutate(to=ifelse(Relationship=="Child",cases$AK, cases$to))
+  mutate(to=ifelse(Relationship=="Child",
+                   cases$AK, cases$to))#for child cases putting the AK in the to column
 
 cases <- cases%>%
-  mutate(from=ifelse(Relationship=="Parent",cases$AK, cases$from))
+  mutate(from=ifelse(Relationship=="Parent"
+                     ,cases$AK, cases$from))#for parent cases putting the AK in the from column
 
 parent_values <- cases%>%
   filter(Relationship=="Parent")%>%
-  select(AK,Case,Relationship)
+  select(AK,Case,Relationship)#creating the parent data
 
 child_values <- cases%>%
   filter(Relationship=="Child")%>%
-  select(AK,Case,Relationship)
+  select(AK,Case,Relationship)#creating the child data
 
-final_cases_parent<-left_join(cases,parent_values,by="Case")
-final_cases_child<-left_join(cases,child_values,by="Case")
+final_cases_parent<-left_join(cases,parent_values,by="Case")#binds the parent data to the cases dataset
+final_cases_child<-left_join(cases,child_values,by="Case")#binds the child data to the cases dataset
 
-final_cases_together<-rbind(final_cases_child,final_cases_parent)
+final_cases_together<-rbind(final_cases_child,final_cases_parent)#binds the 2 datasets together
 
-final_cases<-c("from","to")
+final_cases<-as.data.frame(c("from","to"))#creating a dateset to input the new code into
 
-final_cases<-as.data.frame(final_cases)
-
-names(final_cases_together)[names(final_cases_together) == 'Relationship.x'] <- 'Relationship'
-
-names(final_cases_together)[names(final_cases_together) == 'Case.y'] <- 'node'
+names(final_cases_together)[names(final_cases_together) == 'Relationship.x'] <- 'Relationship'#renaming column for matching purposes
 
 final_cases<-final_cases_together%>%
   filter(Relationship!=is.na(final_cases_together$Relationship))%>%
-  mutate(to=ifelse(Relationship=="Parent" & Relationship.y=="Child"&from!=0&to==0,AK.y,to))
+  mutate(to=ifelse(Relationship=="Parent" & Relationship.y=="Child"&from!=0&to==0,
+                   AK.y,to))#creating the matching algorithm for cases to create the from and to column
 
 address_change_data <- raw_data%>%
-  filter(`Change Reason`=="ADDRESS CHANGE & REVIEW OF ASSESSMENT")
-
-address_change_data<-address_change_data%>%
-  mutate(RV = if_else(is.na(RV), 0, RV))
+  filter(`Change Reason`=="ADDRESS CHANGE & REVIEW OF ASSESSMENT")#creating the dataset for address changes
 
 address_change_data<-address_change_data%>%
   mutate(from=if_else(RV==0,AK,0),
-         to=if_else(RV!=0,AK,0))
+         to=if_else(RV!=0,AK,0))#matching the dataset to create the columns
 
 address_from_data<-address_change_data%>%
   sort_by(address_change_data$Case)%>%
-  filter(from!=0)
+  filter(from!=0)#ordering the data so that the resulting dataframe matches correctly and then filtering out the irrelevant data for one half of the dataset
 
 address_to_data<-address_change_data%>%
   sort_by(address_change_data$Case)%>%
-  filter(to!=0)
+  filter(to!=0)#ordering the data so that the resulting dataframe matches correctly and then filtering out the irrelevant data for one half of the dataset
 
-address_link_data<-data.frame(address_from_data$from,address_to_data$to)
+address_link_data<-data.frame(address_from_data$from,address_to_data$to)#creating this dataset
 
-colnames(address_link_data)<-c("from","to")
-
-address_link_data<-address_link_data%>%
-  distinct()
+colnames(address_link_data)<-c("from","to")#renaming the columns to match the reconstitutions dataset
 
 address_link_data<-address_link_data%>%
-  mutate(color="purple")
+  distinct()#removing any duplicates
+
+address_link_data<-address_link_data%>%
+  mutate(color="purple")#adding this column so the edges colour correctly in the graph
 
 ```
 
@@ -171,25 +142,25 @@ address_link_data<-address_link_data%>%
 
 ```{r creating the plots, echo=TRUE}
 
-link_data<-data.frame(final_cases$from,final_cases$to)
+link_data<-data.frame(final_cases$from,final_cases$to)#the reconstitution dataframe
 
-colnames(link_data)<-c("from","to")
+colnames(link_data)<-c("from","to")#renaming column to be recognised by visnetwork
 
 link_data<-link_data%>%
   filter(from!=0)%>%
-  filter(to!=0)
+  filter(to!=0)#removing any values that are 0
 
 link_data<-link_data%>%
-  mutate(color="pink")
+  mutate(color="pink")#adding this to add the colour of the node
 
 link_data<-link_data%>%
-  distinct()
+  distinct()#removing any duplicates
 
-link_data_all<-rbind(link_data,address_link_data)
+link_data_all<-rbind(link_data,address_link_data)#joining the 2 sets of edge data together
 
 ledges<-data.frame(color=c("pink","purple"),
                    label=c("Reconstitution","ADDRESS CHANGE & REVIEW OF ASSESSMENT"),
-                   width=5)
+                   width=5)#label for the graph
 
 network_graph<-visNetwork(nodes,link_data_all,physics=FALSE,width="100%")%>%
   visNodes()%>%
@@ -198,11 +169,11 @@ network_graph<-visNetwork(nodes,link_data_all,physics=FALSE,width="100%")%>%
   visGroups(groupname = "full sbr", color="lightgreen")%>%
   visGroups(groupname = "partial sbr", color="orange")%>%
   visGroups(groupname = "inelligible", color="red")%>%
-  visOptions(nodesIdSelection = TRUE,highlightNearest = TRUE)%>%
+  visOptions(nodesIdSelection = TRUE,highlightNearest = TRUE,selectedBy = "group")%>%
   visLegend(addEdges = ledges,
             addNodes=list(font.color = "white"))
 
-visSave(network_graph,"Interactive graph.html")
+visSave(network_graph,"Interactive graph.html")#saves the graph
 
 ```
 
