@@ -26,6 +26,12 @@ raw_data <- read_excel("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-
 raw_data<-read_excel("Data/AK8038429000.xlsx")
 raw_data<-read_excel("Data/AK10059370000.xlsx")
 raw_data<-read_excel("Data/Raven Suite - AK - 13091186000.xlsx")
+
+raw_data_1<-read_excel("Data/Part 1 AK11002881000.xlsx")
+raw_data_2<-read_excel("Data/Part 2 AK11002881000.xlsx")
+
+raw_data<-rbind(raw_data_1,raw_data_2)
+
 raw_data <-raw_data%>%
   rename(AK="Addresskey",
          List="List Year",
