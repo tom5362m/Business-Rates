@@ -159,6 +159,9 @@ address_link_data<-data.frame(address_from_data$from,address_to_data$to)
 colnames(address_link_data)<-c("from","to")
 
 address_link_data<-address_link_data%>%
+  distinct
+
+address_link_data<-address_link_data%>%
   mutate(color="purple")
 
 ```
