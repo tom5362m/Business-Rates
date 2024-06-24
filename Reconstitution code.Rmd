@@ -45,6 +45,7 @@ raw_data%>%
          RV=if_else(is.na(RV), 0, RV))|>#cleaning the data on RV and dates here so it is easier to do
     mutate(effective_date=str_replace_all(Effective,"-","/"))#formatting the dates to be better
 } 
+raw_data<-load_data("Data/Part 2 AK11002881000.xlsx","Data/Part 1 AK11002881000.xlsx")
 raw_data<-load_data("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 2 AK11002881000.xlsx","C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 1 AK11002881000.xlsx")
 ```
 
@@ -68,19 +69,15 @@ nodes<-nodes_creation(raw_data)
 
 ```{r creating the edge data for reconstitutions data, echo=TRUE}
 reconstitution_edge_creation<-function(reconstitution_data){
-  cases<-raw_data%>%
+  cases<-reconstitution_data%>%
   group_by(Case)%>%
-  group_by(Relationship)#creating a new data set that is grouped for checking purposes
-  reconstitution_data
-cases$from<-0#creating the from column for the edge data
-cases$to<-0#creating the to column for the edge data
+  group_by(Relationship)|>#creating a new data set that is grouped for checking purposes
+    mutate(from=0, to=0)|>
+    mutate(to=ifelse(Relationship=="Child",
+                     id, to))|>#for child cases putting the AK in the to column 
+    mutate(from=ifelse(Relationship=="Parent",
+                       id, from))#for parent cases putting the AK in the from column
   
-cases<-cases%>%
-  mutate(to=ifelse(Relationship=="Child",
-                   cases$id, cases$to))|>#for child cases putting the AK in the to column 
-  mutate(from=ifelse(Relationship=="Parent"
-                     ,cases$id, cases$from))#for parent cases putting the AK in the from column
-
 parent_values <- cases%>%
   filter(Relationship=="Parent")%>%
   select(id,Case,Relationship)#creating the parent data
@@ -89,21 +86,16 @@ child_values <- cases%>%
   filter(Relationship=="Child")%>%
   select(id,Case,Relationship)#creating the child data
 
-final_cases_parent<-left_join(cases,parent_values,by="Case",relationship = "many-to-many")#binds the parent data to the cases dataset
-final_cases_child<-left_join(cases,child_values,by="Case",relationship = "many-to-many")#binds the child data to the cases data set
+final_cases<-left_join(cases,parent_values,by="Case",relationship = "many-to-many")|>#binds the parent data to the cases dataset
+  rename(id="id.x",Relationship="Relationship.x")
 
-final_cases_together<-rbind(final_cases_child,final_cases_parent)|>
-  rename(Relationship="Relationship.x")#binds the 2 data sets together
-
-final_cases<-final_cases_together%>%
-  filter(Relationship!=is.na(final_cases_together$Relationship))%>%
-  mutate(to=ifelse(Relationship=="Parent" & Relationship.y=="Child"&from!=0&to==0,
-                   id.y,to))#creating the matching algorithm for cases to create the from and to column
+final_cases<-final_cases%>%
+  filter(Relationship!=is.na(final_cases$Relationship))%>%
+  mutate(from=ifelse(Relationship=="Child"&from==0&to!=0,
+                   id.y,from))#creating the matching algorithm for cases to create the from and to column
 
 link_data<-data.frame(final_cases$from,final_cases$to)|>
-  rename(from="final_cases.from",to="final_cases.to")#the reconstitution data frame
-
-link_data<-link_data%>%
+  rename(from="final_cases.from",to="final_cases.to")|>#the reconstitution data frame
   filter(from!=0)%>%
   filter(to!=0)|>#removing any values that are 0
   mutate(color="pink")|>#adding this to add the colour of the node
@@ -137,7 +129,7 @@ address_link_data<-data.frame(address_from_data$from,address_to_data$to)%>%
 }
 address_edge<-address_edge_creation(raw_data)
 ```
-##creating the graph itself
+##creating the graph itself. First it links the edge and node datasets together and then creates the label for the plot itself before creating the plot
 
 
 ```{r creating the plots, echo=TRUE}
@@ -164,4 +156,3 @@ graph<-create_graph(nodes,address_edge,reconstitution_edge)
 visSave(graph,"Interactive graph.html")#saves the graph
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
