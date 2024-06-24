@@ -39,13 +39,14 @@ load_data<-function(data_set_1, data_set_2) {
          Effective="Effective Date",
          Alteration="List Alteration Date",
          Assessment="Ass Ref",
-         Case="Case Number")
+         Case="Case Number",
+         change_reason="Change Reason")
 raw_data%>%
   mutate(Effective=if_else(is.na(Effective), as.Date("1995/04/01"), Effective),
          RV=if_else(is.na(RV), 0, RV))|>#cleaning the data on RV and dates here so it is easier to do
     mutate(effective_date=str_replace_all(Effective,"-","/"))#formatting the dates to be better
 } 
-raw_data<-load_data("Data/Part 2 AK11002881000.xlsx","Data/Part 1 AK11002881000.xlsx")
+raw_data<-load_data("Data/Raven Suite - AK - 13091186000.xlsx",NULL)
 raw_data<-load_data("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 2 AK11002881000.xlsx","C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 1 AK11002881000.xlsx")
 ```
 
@@ -108,7 +109,7 @@ reconstitution_edge<-reconstitution_edge_creation(raw_data)
 ```{r creating the edge address change edge data, echo=TRUE}
 address_edge_creation<-function(address_data){
   address_change_data<-address_data%>%
-  filter("Change Reason"=="ADDRESS CHANGE & REVIEW OF ASSESSMENT")|>#creating the data set for address changes
+  filter(change_reason=="ADDRESS CHANGE & REVIEW OF ASSESSMENT")|>#creating the data set for address changes
   mutate(from=if_else(RV==0,id,0),
          to=if_else(RV!=0,id,0))
   #matching the data set to create the columns
