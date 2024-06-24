@@ -25,13 +25,13 @@ library(lubridate)
 
 load_data<-function(data_set_1, data_set_2) {
   if(is.null(data_set_1)==FALSE & is.null(data_set_2)==FALSE){
-    rbind(data_set_1,data_set_2)
+    rbind(data_set_1,data_set_2)#this is when both datasets have information in them
     }
   if(is.null(data_set_1)==FALSE){
-  raw_data<-read_excel(data_set_1)
+  raw_data<-read_excel(data_set_1)#this section is if data set 1 contains the information
   }
   else{
-    raw_data<-read_excel(data_set_2)
+    raw_data<-read_excel(data_set_2)#this section is if data set 2 contains the information
   }
   raw_data <-raw_data%>%
   rename(id="Addresskey",
@@ -46,7 +46,7 @@ raw_data%>%
          RV=if_else(is.na(RV), 0, RV))|>#cleaning the data on RV and dates here so it is easier to do
     mutate(effective_date=str_replace_all(Effective,"-","/"))#formatting the dates to be better
 } 
-raw_data<-load_data("Data/Raven Suite - AK - 13091186000.xlsx",NULL)
+raw_data<-load_data("Data/AK9635176000.xlsx",NULL)
 raw_data<-load_data("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 2 AK11002881000.xlsx","C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 1 AK11002881000.xlsx")
 ```
 
@@ -142,8 +142,8 @@ ledges<-data.frame(color=c("pink","purple"),
                    label=c("Reconstitution","ADDRESS CHANGE & REVIEW OF ASSESSMENT"),
                    width=5)#label for the graph
 
-network_graph<-visNetwork(nodes,link_data_all,physics=FALSE,width="100%")%>%
-  visNodes()%>%
+network_graph<-visNetwork(nodes,link_data_all,width="100%")%>%
+  visNodes(physics=FALSE)%>%
   visEdges(arrows = "middle",width = 5)%>%
   visGroups(groupname = "zero", color="lightblue")%>%
   visGroups(groupname = "full sbr", color="lightgreen")%>%
