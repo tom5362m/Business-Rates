@@ -91,15 +91,21 @@ final_cases<-left_join(cases,parent_values,by="Case",relationship = "many-to-man
   rename(id="id.x",Relationship="Relationship.x")
 
 final_cases<-final_cases%>%
+  group_by(Case)%>%
+  mutate(colours=ifelse(Relationship=="Parent",1,ifelse(Relationship=="Child",2,NA)))|>
+  mutate(color=ifelse(sum(colours==1,na.rm=TRUE)>sum(colours==2,na.rm=TRUE)/2,
+                             "grey","pink"))
+
+final_cases<-final_cases%>%
+  ungroup(Case)%>%
   filter(Relationship!=is.na(final_cases$Relationship))%>%
   mutate(from=ifelse(Relationship=="Child"&from==0&to!=0,
                    id.y,from))#creating the matching algorithm for cases to create the from and to column
 
-link_data<-data.frame(final_cases$from,final_cases$to)|>
-  rename(from="final_cases.from",to="final_cases.to")|>#the reconstitution data frame
+link_data<-data.frame(final_cases$from,final_cases$to,final_cases$color)|>
+  rename(from="final_cases.from",to="final_cases.to",color="final_cases.color")|>#the reconstitution data frame
   filter(from!=0)%>%
-  filter(to!=0)|>#removing any values that are 0
-  mutate(color="pink")|>#adding this to add the colour of the node
+  filter(to!=0)%>%#removing any values that are 0
   distinct()#removing any duplicates
 }
 reconstitution_edge<-reconstitution_edge_creation(raw_data)
@@ -136,10 +142,10 @@ address_edge<-address_edge_creation(raw_data)
 ```{r creating the plots, echo=TRUE}
 
 create_graph<-function(nodes,address,reconstitution){
-link_data_all<-rbind(address,reconstitution)#joining the 2 sets of edge data together
+link_data_all<-rbind(address_edge,reconstitution_edge)#joining the 2 sets of edge data together
 
-ledges<-data.frame(color=c("pink","purple"),
-                   label=c("Reconstitution","ADDRESS CHANGE & REVIEW OF ASSESSMENT"),
+ledges<-data.frame(color=c("pink","purple","grey"),
+                   label=c("Split","ADDRESS CHANGE & REVIEW OF ASSESSMENT","Merge"),
                    width=5)#label for the graph
 
 network_graph<-visNetwork(nodes,link_data_all,width="100%")%>%
@@ -155,5 +161,6 @@ network_graph<-visNetwork(nodes,link_data_all,width="100%")%>%
 }
 graph<-create_graph(nodes,address_edge,reconstitution_edge)
 visSave(graph,"Interactive graph.html")#saves the graph
+
 ```
 
