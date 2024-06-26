@@ -46,7 +46,7 @@ raw_data%>%
          RV=if_else(is.na(RV), 0, RV))|>#cleaning the data on RV and dates here so it is easier to do
     mutate(effective_date=str_replace_all(Effective,"-","/"))#formatting the dates to be better
 } 
-raw_data<-load_data("Data/AK9635176000.xlsx",NULL)
+raw_data<-load_data("Data/Raven Suite - AK - 13091186000.xlsx",NULL)
 raw_data<-load_data("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 2 AK11002881000.xlsx","C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 1 AK11002881000.xlsx")
 ```
 
@@ -60,9 +60,10 @@ node_input%>%
   group_by(id)|>
   slice(which.max(as_date(effective_date)))|>#selecting the RV based on the most recent entry for each id
   ungroup()%>%
-  mutate(group=if_else(RV>0&RV<12000,"full sbr",
-                                 if_else(RV>=12000&RV<15000,"partial sbr",
-                                         if_else(RV==0,"zero","inelligible"))))
+  mutate(group=if_else(RV>0&RV<2600,"Below Threshold",
+                                 if_else(RV>=12000&RV<15000,"Partial SBR",
+                                         if_else(RV==0,"Zero",if_else(RV>=2900&RV<12000,
+                                                                      "Full SBR","Inelligible")))))
 }
 nodes<-nodes_creation(raw_data)
 ```
@@ -142,7 +143,7 @@ address_edge<-address_edge_creation(raw_data)
 ```{r creating the plots, echo=TRUE}
 
 create_graph<-function(nodes,address,reconstitution){
-link_data_all<-rbind(address_edge,reconstitution_edge)#joining the 2 sets of edge data together
+link_data_all<-rbind(address,reconstitution)#joining the 2 sets of edge data together
 
 ledges<-data.frame(color=c("pink","purple","grey"),
                    label=c("Split","ADDRESS CHANGE & REVIEW OF ASSESSMENT","Merge"),
@@ -151,10 +152,11 @@ ledges<-data.frame(color=c("pink","purple","grey"),
 network_graph<-visNetwork(nodes,link_data_all,width="100%")%>%
   visNodes(physics=FALSE)%>%
   visEdges(arrows = "middle",width = 5)%>%
-  visGroups(groupname = "zero", color="lightblue")%>%
-  visGroups(groupname = "full sbr", color="lightgreen")%>%
-  visGroups(groupname = "partial sbr", color="orange")%>%
-  visGroups(groupname = "inelligible", color="red")%>%
+  visGroups(groupname = "Zero", color="lightblue")%>%
+  visGroups(groupname = "Below Threshold", color="lightgreen")%>%
+  visGroups(groupname = "Partial SBR", color="orange")%>%
+  visGroups(groupname = "Inelligible", color="red")%>%
+  visGroups(groupname = "Full SBR", color="darkgreen")%>%
   visOptions(nodesIdSelection = TRUE,highlightNearest = TRUE,selectedBy = "group")%>%
   visLegend(addEdges = ledges,
             addNodes=list(font.color = "white"))
