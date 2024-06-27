@@ -42,8 +42,7 @@ load_data<-function(data_set_1, data_set_2) {
          Case="Case Number",
          change_reason="Change Reason")
 raw_data%>%
-  mutate(Effective=if_else(is.na(Effective), as.Date("1995/04/01"), Effective),
-         RV=if_else(is.na(RV), 0, RV))|>#cleaning the data on RV and dates here so it is easier to do
+  mutate(Effective=if_else(is.na(Effective), as.Date("1995/04/01"), Effective))%>%
     mutate(effective_date=str_replace_all(Effective,"-","/"))#formatting the dates to be better
 } 
 raw_data<-load_data("Data/Raven Suite - AK - 13091186000.xlsx",NULL)
@@ -60,10 +59,11 @@ node_input%>%
   group_by(id)|>
   slice(which.max(as_date(effective_date)))|>#selecting the RV based on the most recent entry for each id
   ungroup()%>%
+    mutate(RV=if_else(is.na(RV), -1, RV))|>
   mutate(group=if_else(RV>0&RV<2900,"Below Threshold",
                                  if_else(RV>=12000&RV<15000,"Partial SBR",
                                          if_else(RV==0,"Zero",if_else(RV>=2900&RV<12000,
-                                                                      "Full SBR","Inelligible")))))
+                                                                      "Full SBR",if_else(RV<0,"Old","Inelligible"))))))
 }
 nodes<-nodes_creation(raw_data)
 ```
@@ -116,7 +116,8 @@ reconstitution_edge<-reconstitution_edge_creation(raw_data)
 ```{r creating the edge address change edge data, echo=TRUE}
 address_edge_creation<-function(address_data){
   address_change_data<-address_data%>%
-  filter(change_reason=="ADDRESS CHANGE & REVIEW OF ASSESSMENT")|>#creating the data set for address changes
+  filter(change_reason=="ADDRESS CHANGE & REVIEW OF ASSESSMENT")|>
+    mutate(RV=if_else(is.na(RV), 0, RV))|>#creating the data set for address changes
   mutate(from=if_else(RV==0,id,0),
          to=if_else(RV!=0,id,0))
   #matching the data set to create the columns
@@ -157,6 +158,7 @@ network_graph<-visNetwork(nodes,link_data_all,width="100%")%>%
   visGroups(groupname = "Partial SBR", color="orange")%>%
   visGroups(groupname = "Inelligible", color="red")%>%
   visGroups(groupname = "Full SBR", color="darkgreen")%>%
+  visGroups(groupname = "Old", color="brown")%>%
   visOptions(nodesIdSelection = TRUE,highlightNearest = TRUE,selectedBy = "group")%>%
   visLegend(addEdges = ledges,
             addNodes=list(font.color = "white"))
