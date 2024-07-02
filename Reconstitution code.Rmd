@@ -60,10 +60,12 @@ node_input%>%
   slice(which.max(as_date(effective_date)))|>#selecting the RV based on the most recent entry for each id
   ungroup()%>%
     mutate(RV=if_else(is.na(RV), -1, RV))|>
-  mutate(group=if_else(RV>0&RV<2900,"Below Threshold",
-                                 if_else(RV>=12000&RV<15000,"Partial SBR",
-                                         if_else(RV==0,"Zero",if_else(RV>=2900&RV<12000,
-                                                                      "Full SBR",if_else(RV<0,"Old","Inelligible"))))))
+  mutate(group=case_when(RV>0&RV<2900~"Below Threshold",
+                       RV>=12000&RV<15000~"Partial SBR",
+                       RV==0~"Zero",
+                       RV>=2900&RV<12000~"Full SBR",
+                       RV<0~"Old",
+                       RV>=15000~"Inelligible"))
 }
 nodes<-nodes_creation(raw_data)
 ```
