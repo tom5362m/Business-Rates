@@ -45,7 +45,7 @@ raw_data%>%
   mutate(Effective=if_else(is.na(Effective), as.Date("1995/04/01"), Effective))%>%
     mutate(effective_date=str_replace_all(Effective,"-","/"))#formatting the dates to be better
 } 
-raw_data<-load_data("Data/Raven Suite - AK - 13091186000.xlsx",NULL)
+raw_data<-load_data("Data/Mortgage broker case.xlsx",NULL)
 raw_data<-load_data("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 2 AK11002881000.xlsx","C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 1 AK11002881000.xlsx")
 ```
 
