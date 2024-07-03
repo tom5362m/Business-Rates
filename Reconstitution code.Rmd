@@ -161,7 +161,7 @@ network_graph<-visNetwork(nodes,link_data_all,width="100%")%>%
   visGroups(groupname = "Inelligible", color="red")%>%
   visGroups(groupname = "Full SBR", color="darkgreen")%>%
   visGroups(groupname = "Old", color="brown")%>%
-  visOptions(nodesIdSelection = TRUE,highlightNearest = TRUE,selectedBy = "group")%>%
+  visOptions(nodesIdSelection = TRUE,highlightNearest = TRUE,selectedBy = "group",manipulation = TRUE)%>%
   visLegend(addEdges = ledges,
             addNodes=list(font.color = "white"))
 }
