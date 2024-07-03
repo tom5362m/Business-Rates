@@ -43,7 +43,9 @@ load_data<-function(data_set_1, data_set_2) {
          change_reason="Change Reason")
 raw_data%>%
   mutate(Effective=if_else(is.na(Effective), as.Date("1995/04/01"), Effective))%>%
-    mutate(effective_date=str_replace_all(Effective,"-","/"))#formatting the dates to be better
+    mutate(effective_date=str_replace_all(Effective,"-","/"),
+    title=str_glue(
+           "<a target=\"_blank\" href=\"http://gnsql/gmn/QueryViewerBeta/VOAQueryV3.aspx?AddKey={id}\">{id}</a>"))#formatting the dates to be better
 } 
 raw_data<-load_data("Data/Mortgage broker case.xlsx",NULL)
 raw_data<-load_data("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 2 AK11002881000.xlsx","C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Data/Part 1 AK11002881000.xlsx")
@@ -55,7 +57,7 @@ raw_data<-load_data("C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rat
 
 nodes_creation<-function(node_input){
 node_input%>%
-  select(id,effective_date,RV)|>#creating the nodes list
+  select(id,effective_date,RV,title)|>#creating the nodes list
   group_by(id)|>
   slice(which.max(as_date(effective_date)))|>#selecting the RV based on the most recent entry for each id
   ungroup()%>%
@@ -66,8 +68,6 @@ node_input%>%
                        RV>=2900&RV<12000~"Full SBR",
                        RV<0~"Old",
                        RV>=15000~"Inelligible"),
-         title=str_glue(
-           "<a target=\"_blank\" href=\"http://gnsql/gmn/QueryViewerBeta/VOAQueryV3.aspx?AddKey={id}\">{id}</a>"),
          label=id)
 }
 nodes<-nodes_creation(raw_data)
@@ -176,6 +176,19 @@ visSave(graph,"Interactive graph.html")#saves the graph
 ### Address Key Hyperlink Function
 Function for creating address keys:
 ```{r include=FALSE}
+table1 <- NA
+data_t<-NA
+for (i in seq_along(data_t)) {
+    table1[i] <- kable(data.frame(AK = data_t[[i]]$title,
+                                   `RV` = data_t[[i]]$RV,
+                                   `Address` = data_t[[i]]$Address,
+                                  `Relationship` = data_t[[i]]$Relationship,
+                                  `List Alteration Date` = data_t[[i]]$Alteration,
+                                  `Effective Date` = data_t[[i]]$effective_date), format='html', table.attr='class="flat-table"')
+    
+  }
+content <- str_glue("<em>{data$address}</em>{table1}")
+return(content)
 
 ```
 
