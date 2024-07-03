@@ -65,7 +65,10 @@ node_input%>%
                        RV==0~"Zero",
                        RV>=2900&RV<12000~"Full SBR",
                        RV<0~"Old",
-                       RV>=15000~"Inelligible"))
+                       RV>=15000~"Inelligible"),
+         title=str_glue(
+           "<a target=\"_blank\" href=\"http://gnsql/gmn/QueryViewerBeta/VOAQueryV3.aspx?AddKey={id}\">{id}</a>"),
+         label=id)
 }
 nodes<-nodes_creation(raw_data)
 ```
@@ -173,11 +176,7 @@ visSave(graph,"Interactive graph.html")#saves the graph
 ### Address Key Hyperlink Function
 Function for creating address keys:
 ```{r include=FALSE}
-library(stringr)
 
-create_address_key_link <- function(address_key) {
-    str_glue("<a href=\"http://gnsql/gmn/QueryViewerBeta/VOAQueryV3.aspx?AddKey={address_key}\">{address_key}</a>")
-}
 ```
 
 
