@@ -176,19 +176,19 @@ visSave(graph,"Interactive graph.html")#saves the graph
 ### Address Key Hyperlink Function
 Function for creating address keys:
 ```{r include=FALSE}
-table1 <- NA
-data_t<-NA
-for (i in seq_along(data_t)) {
-    table1[i] <- kable(data.frame(AK = data_t[[i]]$title,
-                                   `RV` = data_t[[i]]$RV,
-                                   `Address` = data_t[[i]]$Address,
-                                  `Relationship` = data_t[[i]]$Relationship,
-                                  `List Alteration Date` = data_t[[i]]$Alteration,
-                                  `Effective Date` = data_t[[i]]$effective_date), format='html', table.attr='class="flat-table"')
-    
-  }
-content <- str_glue("<em>{data$address}</em>{table1}")
-return(content)
+
+for (i in seq_along(raw_data)) {
+    table1[i] <- kable(data.frame(AK = raw_data[i,14],
+                                   `RV` = raw_data[i,3],
+                                   `Address` = raw_data[i,2],
+                                  `Relationship` = raw_data[i,12],
+                                  `List Alteration Date` = raw_data[i,5],
+                                  `Effective Date` = raw_data[i,13]), 
+                       format='html', table.attr='class="flat-table"')
+}
+
+return(table1)
+
 
 ```
 
