@@ -20,13 +20,36 @@ library(knitr)
 # Define UI for application that draws a histogram
 
 
-ui <- shinyUI(
-  fluidPage(
-    includeHTML('C:/Users/thoma/OneDrive/Documents/Goodman Nash/Business-Rates/Interactive graph.html')
+ui <- fluidPage(
+  theme = bs_theme(
+    base_font = c("Arial"),
+    primary = c("#e30513")
+  ),
+  sidebarLayout(
+    sidebarPanel(
+      textOutput("panel"),
+      h2("Property reconstitution"),
+      selectizeInput("dataset",
+                     multiple = TRUE),
+      markdown("
+               A shiny app to visualise the history of a property and how it has been split or merged together.
+               
+               It will identify splits/merges/address changes and show which of these is relevant.
+               
+               Lastly it will give an indication of whether SBRR could be applied to that heredit indvidually- does not check for multistes just if the RV could be due SBRR
+               
+               My code an be found in the code tab
+               ")
+      ),
+    mainPanel(
+      tabsetPanel(
+        id="tabset",
+        tabsetPanel("Network")
+      )
+    )
   )
 )
-server <- function(input, output) {
-}
+
 
 shinyApp(ui, server)
 
